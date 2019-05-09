@@ -143,7 +143,7 @@ RUN apt-get update && \
             libssl-dev \
             libtool
 
-# Caffe2 library requirements...
+# Caffe2 libraries
 COPY --from=trtserver_caffe2 \
      /opt/conda/lib/python3.6/site-packages/torch/lib/libcaffe2_detectron_ops_gpu.so \
      /opt/tensorrtserver/lib/
@@ -188,7 +188,7 @@ RUN mkdir -p builddir && \
             cmake -DCMAKE_BUILD_TYPE=Release \
                   -DTRTIS_ENABLE_METRICS=ON \
                   -DTRTIS_ENABLE_CUSTOM=ON \
-                  -DTRTIS_ENABLE_TENSORFLOW=OFF \
+                  -DTRTIS_ENABLE_TENSORFLOW=ON \
                   -DTRTIS_ENABLE_TENSORRT=ON \
                   -DTRTIS_ENABLE_CAFFE2=ON ../build && \
             (make -j16 trtis || true) && \

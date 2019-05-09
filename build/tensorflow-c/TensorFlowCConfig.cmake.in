@@ -24,40 +24,13 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-cmake_minimum_required (VERSION 3.5)
+@PACKAGE_INIT@
 
-#
-# TensorFlow backends
-#
-find_package(TensorFlowC REQUIRED)
-message(STATUS "Using TensorFlowC ${TensorFlowC_VERSION}")
+set_and_check(TensorFlowC_INCLUDE_DIR "@PACKAGE_CMAKE_INSTALL_INCLUDEDIR@")
+set_and_check(TensorFlowC_LIB_DIR "@PACKAGE_CMAKE_INSTALL_LIBDIR@")
 
 set(
-  TENSORFLOW_SRCS
-  autofill.cc
-  base_backend.cc
-  graphdef_backend.cc
-  graphdef_backend_factory.cc
-  savedmodel_backend.cc
-  savedmodel_backend_factory.cc
-  loader.cc
-  tf_utils.cc
+  TensorFlowC_LIBRARIES
+    -L${TensorFlowC_LIB_DIR}
+    -ltensorflow
 )
-
-set(
-  TENSORFLOW_HDRS
-  autofill.h
-  base_backend.h
-  graphdef_backend.h
-  graphdef_backend_factory.h
-  savedmodel_backend.h
-  savedmodel_backend_factory.h
-  loader.h
-  tf_utils.h
-)
-
-add_library(
-  tensorflow-backend-library EXCLUDE_FROM_ALL OBJECT
-  ${TENSORFLOW_SRCS} ${TENSORFLOW_HDRS}
-)
-target_include_directories(tensorflow-backend-library PRIVATE ${TensorFlowC_INCLUDE_DIR})

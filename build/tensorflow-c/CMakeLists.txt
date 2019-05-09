@@ -25,39 +25,31 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 cmake_minimum_required (VERSION 3.5)
+project (tensorflow-c)
 
-#
-# TensorFlow backends
-#
-find_package(TensorFlowC REQUIRED)
-message(STATUS "Using TensorFlowC ${TensorFlowC_VERSION}")
-
-set(
-  TENSORFLOW_SRCS
-  autofill.cc
-  base_backend.cc
-  graphdef_backend.cc
-  graphdef_backend_factory.cc
-  savedmodel_backend.cc
-  savedmodel_backend_factory.cc
-  loader.cc
-  tf_utils.cc
+install(
+  DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib
+  DESTINATION .
+  FILE_PERMISSIONS
+    OWNER_EXECUTE GROUP_EXECUTE WORLD_EXECUTE
+    OWNER_READ GROUP_READ WORLD_READ
 )
 
-set(
-  TENSORFLOW_HDRS
-  autofill.h
-  base_backend.h
-  graphdef_backend.h
-  graphdef_backend_factory.h
-  savedmodel_backend.h
-  savedmodel_backend_factory.h
-  loader.h
-  tf_utils.h
+install(
+  DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include
+  DESTINATION .
 )
 
-add_library(
-  tensorflow-backend-library EXCLUDE_FROM_ALL OBJECT
-  ${TENSORFLOW_SRCS} ${TENSORFLOW_HDRS}
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
+configure_package_config_file(
+  TensorFlowCConfig.cmake.in TensorFlowCConfig.cmake
+  INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
+  PATH_VARS CMAKE_INSTALL_INCLUDEDIR CMAKE_INSTALL_LIBDIR
+  NO_CHECK_REQUIRED_COMPONENTS_MACRO
 )
-target_include_directories(tensorflow-backend-library PRIVATE ${TensorFlowC_INCLUDE_DIR})
+
+install(
+  FILES "${CMAKE_CURRENT_BINARY_DIR}/TensorFlowCConfig.cmake"
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
+)

@@ -40,12 +40,14 @@ namespace nvidia { namespace inferenceserver {
 
 Status
 SavedModelBackendFactory::Create(
-    const GraphDefBackendFactory::Config& backend_config,
+    const std::shared_ptr<BackendConfig>& backend_config,
     std::unique_ptr<SavedModelBackendFactory>* factory)
 {
   LOG_VERBOSE(1) << "Create SavedModelBackendFactory";
 
-  factory->reset(new SavedModelBackendFactory(backend_config));
+  auto savedmodel_backend_config =
+      std::static_pointer_cast<GraphDefBackendFactory::Config>(backend_config);
+  factory->reset(new SavedModelBackendFactory(savedmodel_backend_config));
   return Status::Success;
 }
 

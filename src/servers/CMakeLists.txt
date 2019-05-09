@@ -115,6 +115,15 @@ if(${TRTIS_ENABLE_TENSORRT})
   )
 endif() # TRTIS_ENABLE_TENSORRT
 
+if(${TRTIS_ENABLE_TENSORFLOW})
+  find_package(TensorFlowC REQUIRED)
+  message(STATUS "Using TensorFlowC ${TensorFlowC_VERSION}")
+  target_link_libraries(
+    trtserver
+    ${TensorFlowC_LIBRARIES}
+  )
+endif() # TRTIS_ENABLE_TENSORFLOW
+
 if(${TRTIS_ENABLE_CAFFE2})
   target_link_libraries(
     trtserver

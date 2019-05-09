@@ -181,6 +181,19 @@ ExternalProject_Add(prometheus-cpp
 )
 
 #
+# Download TensorFlow C library
+#
+ExternalProject_Add(tensorflow-c
+  PREFIX tensorflow-c
+  URL "https://storage.googleapis.com/tensorflow/libtensorflow/libtensorflow-gpu-linux-x86_64-1.13.1.tar.gz"
+  URL_HASH SHA256=b7f1a8cdebaf8ff76cde7768ab350aa546893407336dc852dc425f07c903523c
+  SOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/tensorflow-c/src/tensorflow-c"
+  PATCH_COMMAND bash -c "cp ${CMAKE_SOURCE_DIR}/tensorflow-c/* ."
+  CMAKE_CACHE_ARGS
+    -DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_CURRENT_BINARY_DIR}/tensorflow-c/install
+)
+
+#
 # Build TRTIS test utilities
 #
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
@@ -281,6 +294,9 @@ else()
   if(${TRTIS_ENABLE_METRICS})
     set(TRTIS_DEPENDS ${TRTIS_DEPENDS} prometheus-cpp)
   endif() # TRTIS_ENABLE_METRICS
+  if(${TRTIS_ENABLE_TENSORFLOW})
+    set(TRTIS_DEPENDS ${TRTIS_DEPENDS} tensorflow-c)
+  endif() # TRTIS_ENABLE_TENSORFLOW
 endif()
 
 ExternalProject_Add(trtis
@@ -296,6 +312,7 @@ ExternalProject_Add(trtis
     -DLibevent_DIR:PATH=${CMAKE_CURRENT_BINARY_DIR}/libevent/install/lib/cmake/libevent
     -Dlibevhtp_DIR:PATH=${CMAKE_CURRENT_BINARY_DIR}/libevhtp/install/lib/cmake/libevhtp
     -Dprometheus-cpp_DIR:PATH=${CMAKE_CURRENT_BINARY_DIR}/prometheus-cpp/install/lib/cmake/prometheus-cpp
+    -DTensorFlowC_DIR:PATH=${CMAKE_CURRENT_BINARY_DIR}/tensorflow-c/install/lib/cmake/tensorflow-c
     -DTRTIS_ENABLE_METRICS:BOOL=${TRTIS_ENABLE_METRICS}
     -DTRTIS_ENABLE_TENSORFLOW:BOOL=${TRTIS_ENABLE_TENSORFLOW}
     -DTRTIS_ENABLE_TENSORRT:BOOL=${TRTIS_ENABLE_TENSORRT}
