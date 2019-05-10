@@ -28,10 +28,14 @@
 #include "src/core/model_config.h"
 #include "src/core/model_config.pb.h"
 #include "src/core/status.h"
-#include "tensorflow/core/framework/tensor_shape.pb.h"
-#include "tensorflow/core/framework/types.pb.h"
+#include "tensorflow/c/c_api.h"
 
 namespace nvidia { namespace inferenceserver {
+
+/// \return the TF_SessionOptions for a backend configuration.
+Status NewSessionOptionsFromGraphDefBackendConfig(
+    const std::shared_ptr<GraphDefBackendFactory::Config>& backend_config,
+    TF_SessionOptions** session_options);
 
 /// \return true if a TensorFlow shape exactly matches a model
 /// configuration shape. Dimensions with variable size are represented
@@ -78,12 +82,12 @@ DataType ConvertDataType(tensorflow::DataType dtype);
 RequestStatusCode FromTFError(const int tf_code);
 
 // If TensorFlow status is non-OK, return the equivalent Status.
-#define RETURN_IF_TF_ERROR(TFS)                                              \
-  do {                                                                       \
-    const tensorflow::Status& status__ = (TFS);                              \
-    if (status__.code() != 0) {                                              \
-      return Status(FromTFError(status__.code()), status__.error_message()); \
-    }                                                                        \
+#define RETURN_IF_TF_ERROR(TFS)                                               \
+  do {                                                                        \
+    const TF_Status* status__ = (TFS);                                        \
+    if (TF_GetCode(status__) != TF_OK) {                                      \
+      return Status(FromTFError(TF_GetCode(status__)), TF_Message(status__)); \
+    }                                                                         \
   } while (false)
 
 }}  // namespace nvidia::inferenceserver

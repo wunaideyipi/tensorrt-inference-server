@@ -26,8 +26,8 @@
 
 #include "src/backends/tensorflow/base_backend.h"
 
+#include <cuda_runtime_api.h>
 #include <set>
-#include "cuda/include/cuda_runtime_api.h"
 #include "src/backends/tensorflow/tf_utils.h"
 #include "src/core/constants.h"
 #include "src/core/logging.h"
@@ -36,9 +36,6 @@
 #include "src/core/provider.h"
 #include "src/core/server_status.h"
 #include "tensorflow/c/c_api.h"
-#include "tensorflow/core/framework/types.pb.h"
-#include "tensorflow/core/graph/default_device.h"
-#include "tensorflow/core/lib/io/path.h"
 
 namespace nvidia { namespace inferenceserver {
 
@@ -181,6 +178,7 @@ BaseBackend::CreateExecutionContext(
   // https://github.com/tensorflow/tensorflow/issues/8136 and many
   // related issues), so we can't use it here to set the GPU (see
   // CreateSession implementations for SetDefaultDevice). [DLIS-43]
+
   tensorflow::SessionOptions options;
   options.config.mutable_gpu_options()->set_allow_growth(
       backend_config->allow_gpu_memory_growth);

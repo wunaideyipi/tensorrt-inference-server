@@ -34,8 +34,6 @@
 #include "src/core/logging.h"
 #include "src/core/model_config.h"
 #include "src/core/model_config.pb.h"
-#include "tensorflow/cc/saved_model/loader.h"
-#include "tensorflow/cc/saved_model/tag_constants.h"
 
 namespace nvidia { namespace inferenceserver {
 
@@ -213,16 +211,37 @@ AutoFillSavedModel::Create(
   const std::string savedmodel_dir = *(savedmodel_dirs.begin());
   const auto savedmodel_path = JoinPath({version_path, savedmodel_dir});
 
-  std::unique_ptr<tensorflow::SavedModelBundle> bundle;
-  SavedModelPlatformConfig saved_model_config;
-  platform_config.UnpackTo(&saved_model_config);
-  tensorflow::SessionOptions session_options;
-  session_options.config = saved_model_config.session_config();
+  auto graphdef_backend_config =
+      std::static_pointer_cast<Config>(backend_config);
+
+  TF_SessionOptions* session_options = nullptr;
+  RETURN_IF_ERROR(NewSessionOptionsFromGraphDefBackendConfig(
+      graphdef_backend_config, &session_options));
+
+  TF_Session* session = nullptr;
+  TF_Graph* graph = TF_NewGraph();
   tensorflow::SignatureDef sig;
   RETURN_IF_ERROR(LoadSavedModel(
-      model_name, savedmodel_path, session_options, &bundle, &sig));
+      model_name, savedmodel_path, session_options, &session, graph, &sig));
 
   autofill->reset(new AutoFillSavedModelImpl(model_name, savedmodel_dir, sig));
+
+  TF_Status* tfstatus = TF_NewStatus();
+
+  TF_CloseSession(session, tfstatus);
+  if (TF_GetCode(tfstatus) != TF_OK) {
+    return Status(FromTFError(TF_GetCode(tfstatus)), TF_Message(tfstatus));
+  }
+
+  TF_DeleteSession(session, tfstatus);
+  if (TF_GetCode(tfstatus) != TF_OK) {
+    return Status(FromTFError(TF_GetCode(tfstatus)), TF_Message(tfstatus));
+  }
+
+  TF_DeleteSessionOptions(session_options);
+  TF_DeleteGraph(graph);
+  TF_DeleteStatus(tfstatus);
+
   return Status::Success;
 }
 

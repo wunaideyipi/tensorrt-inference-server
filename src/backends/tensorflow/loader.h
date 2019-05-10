@@ -26,24 +26,23 @@
 #pragma once
 
 #include "src/core/status.h"
-#include "tensorflow/cc/saved_model/loader.h"
-#include "tensorflow/cc/saved_model/tag_constants.h"
+#include "tensorflow/c/c_api.h"
 
 namespace nvidia { namespace inferenceserver {
 
 /// Load a SavedModel from a path and return the corresponding
-/// bundle.
+/// TF_Session and TF_Graph.
 ///
 /// \param model_name The name of the model
 /// \param model_path The path to the SavedModel directory
-/// \param session_options The options to use when creating the bundle
-/// \param bundle Returns the SavedModelBundle
+/// \param session_options The options to use when creating the session
+/// \param session Returns the TF_Session
+/// \param graph TF_Graph to initialize with the loaded session graph
 /// \param sig If non-nullptr returns the signature of the model
 /// \return Error status.
 Status LoadSavedModel(
     const std::string& model_name, const std::string& model_path,
-    const tensorflow::SessionOptions& session_options,
-    std::unique_ptr<tensorflow::SavedModelBundle>* bundle,
-    tensorflow::SignatureDef* sig = nullptr);
+    const TF_SessionOptions* session_options, TF_Session** session,
+    TF_Graph* graph, tensorflow::SignatureDef* sig = nullptr);
 
 }}  // namespace nvidia::inferenceserver

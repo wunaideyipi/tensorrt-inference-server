@@ -33,26 +33,35 @@ namespace nvidia { namespace inferenceserver {
 Status
 LoadSavedModel(
     const std::string& model_name, const std::string& model_path,
-    const tensorflow::SessionOptions& session_options,
-    std::unique_ptr<tensorflow::SavedModelBundle>* bundle,
-    tensorflow::SignatureDef* sig)
+    const TF_SessionOptions* session_options, TF_Session** session,
+    TF_Graph* graph, tensorflow::SignatureDef* sig)
 {
-  bundle->reset(new tensorflow::SavedModelBundle);
+  TF_Status* tfstatus = TF_NewStatus();
+  TF_Buffer* metagraph = TF_NewBuffer();
+  const char* tags[] = {tensorflow::kSavedModelTagServe};
+  *session = TF_LoadSessionFromSavedModel(
+      session_options, nullptr /* run_options */, model_path.c_str(), tags, 1,
+      graph, metagraph, tfstatus);
+  if (TF_GetCode(tfstatus) != TF_OK) {
+    auto status =
+        Status(FromTFError(TF_GetCode(tfstatus)), TF_Message(tfstatus));
+    TF_DeleteBuffer(metagraph);
+    TF_DeleteStatus(tfstatus);
+    *session = nullptr;
+    return status;
+  }
 
-  std::unordered_set<std::string> saved_model_tags;
-  saved_model_tags.insert(tensorflow::kSavedModelTagServe);
+  tensorflow::MetaGraphDef meta_graph_def;
+  meta_graph_def.ParseFromArray(metagraph->data, metagraph->length);
 
-  tensorflow::RunOptions run_options;
-  RETURN_IF_TF_ERROR(tensorflow::LoadSavedModel(
-      session_options, run_options, model_path, saved_model_tags,
-      bundle->get()));
+  TF_DeleteBuffer(metagraph);
+  TF_DeleteStatus(tfstatus);
 
-  LOG_VERBOSE(1) << "Loaded saved-model: "
-                 << (*bundle)->meta_graph_def.DebugString();
+  LOG_VERBOSE(1) << "Loaded saved-model: " << meta_graph_def.DebugString();
 
-  // Verify that the bundle has the "serve" tag
+  // Verify that the session has the "serve" tag
   bool found_serve_tag = false;
-  for (const auto& tag : (*bundle)->meta_graph_def.meta_info_def().tags()) {
+  for (const auto& tag : meta_graph_def.meta_info_def().tags()) {
     if (tag == tensorflow::kSavedModelTagServe) {
       found_serve_tag = true;
       break;
@@ -68,9 +77,9 @@ LoadSavedModel(
   // Verify that a "serving_default" signature exists, that is what
   // will be used to verify the inputs and outputs.
   static const std::string DEFAULT_SERVING_SIGNATURE_DEF_KEY("serving_default");
-  const auto& sig_itr = (*bundle)->meta_graph_def.signature_def().find(
-      DEFAULT_SERVING_SIGNATURE_DEF_KEY);
-  if (sig_itr == (*bundle)->meta_graph_def.signature_def().end()) {
+  const auto& sig_itr =
+      meta_graph_def.signature_def().find(DEFAULT_SERVING_SIGNATURE_DEF_KEY);
+  if (sig_itr == meta_graph_def.signature_def().end()) {
     return Status(
         RequestStatusCode::INVALID_ARG,
         "unable to load model '" + model_name + "', expected '" +

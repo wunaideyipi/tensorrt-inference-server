@@ -26,7 +26,36 @@
 
 #include "src/backends/tensorflow/tf_utils.h"
 
+#include "tensorflow/c/c_api.h"
+
 namespace nvidia { namespace inferenceserver {
+
+Status
+NewSessionOptionsFromGraphDefBackendConfig(
+    const std::shared_ptr<GraphDefBackendFactory::Config>& backend_config,
+    TF_SessionOptions** session_options)
+{
+  *session_options = TF_NewSessionOptions();
+
+  tensorflow::ConfigProto config;
+  config.mutable_gpu_options()->set_allow_growth(
+      backend_config->allow_gpu_memory_growth);
+  config.mutable_gpu_options()->set_per_process_gpu_memory_fraction(
+      backend_config->per_process_gpu_memory_fraction);
+  config.set_allow_soft_placement(backend_config->allow_soft_placement);
+
+  // FIXME convert config to string...
+  TF_SetConfig(*session_options, const void* proto, size_t proto_len, tfstatus);
+  if (TF_GetCode(tfstatus) != TF_OK) {
+    auto status =
+        Status(FromTFError(TF_GetCode(tfstatus)), TF_Message(tfstatus));
+    TF_DeleteSessionOptions(*session_options);
+    *session_options = nullptr;
+    return status;
+  }
+
+  return Status::Success;
+}
 
 bool
 CompareDimsExact(
